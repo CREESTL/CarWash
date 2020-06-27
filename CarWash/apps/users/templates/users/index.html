@@ -1,0 +1,109 @@
+<!--
+
+ ДОМАШНЯЯ СТРАНИЦА
+
+ -->
+
+
+{% extends "base.html" %}
+<!-- Загружает файлы из папки static -->
+{% load static %}
+{% block content %}
+    <html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <title>Home page</title>
+    </head>
+    <body>
+    <!-- Для авторизованных пользователей -->
+        {% if not logged_in %}
+            <div class="container">
+                <!-- Создаю ряд, в котором будет 3 колонки-->
+                <div class="row">
+                    <!-- Первая колонка пустая -->
+                    <div class="col"></div>
+                    <!-- Во второй колонке находится все содержимое -->
+                    <div class="col">
+                        <h3>
+                            <p class="text-center">
+                                Здравствуйте!
+                                <br><br>
+                                <small>Для начала работы необходимо: </small>
+                            </p>
+                        </h3>
+                        <br>
+
+                        <div class="text-center">
+                            <a href="/register">
+                                <button class="btn btn-outline-info" type="submit">
+                                    <!-- Добавляю логотипы Font Awesome -->
+                                    <span class="fas fa-feather-alt"></span>
+                                    Зарегистрироваться
+                                </button>
+                            </a>
+                        </div>
+                        <br>
+                        <div class="text-center">
+                            или
+                        </div>
+                        <br>
+                        <div class="text-center">
+
+                            <a href="/login">
+                                <button class="btn btn-outline-info" type="submit">
+                                    <span class="fas fa-sign-in-alt"></span>
+                                    Войти
+                                </button>
+                            </a>
+                        </div>
+
+                    </div>
+                    <!-- Третья колонка тоже пустая -->
+                    <div class="col"></div>
+            </div>
+    <!-- Для неавторизованных пользователей -->
+        {% else %}
+
+            <div class="container">
+                <!-- Применяю систему сеток -->
+                <div class="row">
+                    <!-- Первый столбец пустой -->
+                    <div class="col"></div>
+
+                    <!-- Второй столбец содержит кнопки и надпись -->
+                    <div class="col">
+
+                        {% if messages%}
+                            {% for message in messages %}
+                                <p class="text-success text-center"><small>{{ message }}</small></p>
+                            {% endfor %}
+                        {% endif %}
+                        <br><br><br>
+                        <div class="text-center">
+                           <a href="/detect_cars/">
+                                <button class="btn btn-outline-info"  type="submit">
+                                    <span class="fa fa-car" style="color:orange; font-size:26px"></span>
+                                    Прямая трансляция с автомойки
+                                </button>
+                           </a>
+                        </div>
+                        <br>
+                    </div>
+                    <!-- Третий столбец - пустой -->
+                    <div class="col"></div>
+                </div>
+            </div>
+            <div class="border-top pt-3">
+                    <a href="/logout">
+                        <button class="btn btn-light btn-sm">
+                            <span class="fa fa-sign-out-alt" style="color:grey"></span>
+                            Выйти из аккаунта
+                        </button>
+                    </a>
+            </div>
+
+            <br>
+        {% endif %}
+    </body>
+    </html>
+{% endblock %}

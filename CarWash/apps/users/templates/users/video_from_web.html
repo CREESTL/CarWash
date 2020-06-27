@@ -1,0 +1,52 @@
+<!--
+
+ НА ЭТОЙ СТРАНИЦЕ ДОЛЖНО ПОКАЗЫВАТЬСЯ ВИДЕО С МОЙКИ, НО ПОКА ЧТО ОНА НЕ ИСПОЛЬЗУЕТСЯ
+
+ -->
+
+
+{% extends "base.html" %}
+<!-- Загружает файлы из папки static -->
+{% load static %}
+<html>
+<head>
+<meta charset="UTF-8">
+
+
+</head>
+<body>
+{% block content %}
+{% if logged_in == True %}
+    <div class="container">
+        <div class="text-center text-primary">
+            <h2>Видео, полученное с YouTube</h2>
+            <!-- Здест в кавычках - НАЗВАНИЕ url паттерна из urls.py -->
+            <!-- users: нужно, так как у нас в urls.py есть app_name="users"-->
+            <img class='img img-thumbnail rounded' src="{% url 'users:youtube_video_stream' %}" height="400" width="600"/>
+        </div>
+    </div>
+
+    <hr>
+        <a class="ml-2" href="/index">
+            <button class="btn btn-outline-info" type="submit">
+                <span class="fa fa-home"></span>
+                На домашнюю страницу
+            </button>
+        </a>
+    </div>
+
+{% else %}
+    <h2 class="text-danger">Вы не вошли в аккаунт! Видео недоступно</h2>
+    <div class="border-top pt-3">
+        <a class="ml-2" href="/login">
+            <button class="btn btn-outline-info" type="submit">Войти</button>
+        </a>
+    </div>
+{% endif %}
+<br><br>
+</p>
+
+</body>
+{% endblock content %}
+</html>
+

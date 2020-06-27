@@ -1,0 +1,34 @@
+<!--
+
+ СТРАНИЦА ВЫХОДА
+
+ -->
+{% extends 'base.html' %}
+<!-- Загружает файлы из папки static -->
+{% load static %}
+
+
+{% block content %}
+    {% if messages%}
+        {% for message in messages %}
+            <p class="text-success text-center"><small>{{ message }}</small></p>
+        {% endfor %}
+    {% endif %}
+    <div class="row">
+        <div class="border-top pt-3">
+            <a href="/login">
+                <button class="btn btn-outline-info btn-md" type="submit">
+                        <span class="fa fa-sign-in"></span>
+                        Войти заново
+                    </button>
+            </a>
+            <a href="/index">
+                <button class="btn btn-outline-info" type="submit">
+                    <span class="fa fa-home"></span>
+                    На домашнюю страницу
+                </button>
+            </a>
+        </div>
+    </div>
+
+{% endblock content %}

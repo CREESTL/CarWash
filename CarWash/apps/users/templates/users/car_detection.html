@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% load static %}
+<!-- Каждые 2 секунды выполняется ajax запрос на изменение текста на странице -->
+
+<body>
+{% block content %}
+
+<script type="text/javascript">
+
+        // После инициализации детектора, мы будем каждые N секунд получать его self. параметры
+        setInterval(function(){
+        // Второй запрос - получает текстовые данные об авто
+            $.ajax(
+            {
+                url: "/get_text_from_detector/",
+                type: "GET",
+            // data - это то, что возвращает функция из views.py
+                success : function(data) {
+                    $("#info").html(data);
+                },
+
+            });
+        // Третий запрос - распознает номер авто
+            $.ajax(
+            {
+                url: "/detect_LP/",
+                type: "GET",
+            // data - это то, что возвращает функция из views.py
+                success : function(data) {
+                    $("#LP_text").html(data);
+                },
+
+            });
+        // Четвертый запрос - получает общее число авто за все время
+            $.ajax(
+            {
+                url: "/get_total/",
+                type: "GET",
+            // data - это то, что возвращает функция из views.py
+                success : function(data) {
+                    $("#total").html(data);
+                },
+
+            });
+
+       },5000);
+</script>
+
+<!-- Для авторизованных пользователей -->
+{% if logged_in == True %}
+
+    <div class="container">
+
+        <div class="text-center text-info">
+            <h2>Трансляция видео</h2>
+        </div>
+        <br>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="text-left">
+                    <!-- Общая информация об авто -->
+                    <div id="info">
+                        <p>
+
+                        </p>
+                    </div>
+                    <!-- Номер авто -->
+                    <div id="LP_text">
+                        <p>
+
+                        </p>
+                    </div>
+                    <!-- Общее число авто -->
+                    <div id="total">
+                        <p>
+
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div id="car_img"class="text-left">
+                    <img class='img img-thumbnail rounded' src="{% url 'users:get_image_from_detector' %}"/>
+                </div>
+            </div>
+        </div>
+
+
+
+    </div>
+     <hr>
+    <div class="btn btn-group">
+        <a class="ml-2" href="/index">
+            <button class="btn btn-outline-info" type="submit">
+                <span class="fa fa-home"></span>
+                На домашнюю страницу
+            </button>
+        </a>
+    </div>
+
+<!-- Для неавторизованных пользователей -->
+{% else %}
+    <h2>
+        <span class="fa fa-exclamation" style="color:red;"></span>
+        Вы не вошли в аккаунт.Содержимое страницы недоступно
+        <span class="fa fa-exclamation" style="color:red;"></span>
+    </h2>
+    <div class="border-top pt-3">
+        <small class="text-muted">
+            <a class="ml-2" href="/login">
+                <button class="btn btn-outline-info" type="submit">
+                    <span class="fa fa-sign-in"></span>
+                    Войти
+                </button>
+            </a>
+        </small>
+    </div>
+{% endif %}
+
+
+{% endblock %}
+</body>

@@ -1,0 +1,69 @@
+<!--
+
+ СТРАНИЦА ВХОДА
+
+ -->
+
+
+{% extends 'base.html' %}
+<!-- Загружает файлы из папки static -->
+{% load static %}
+<head>
+
+</head>
+
+{% block content %}
+    <div class="container">
+        <!--Показываются все сообщения об успешном входе/некорректных данных -->
+            {% if messages%}
+                {% for message in messages %}
+                    <p class="text-success text-center"><small>{{ message }}</small></p>
+                {% endfor %}
+            {% endif %}
+    </div>
+    <div>
+        <div class="text-center text-info">
+            <h3>Страница входа</h3>
+            <br><br>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Форма, которую заполняет пользователь -->
+        <form class="form-horizontal" action="/login/" method="POST">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="control-label col-md-2">Почта</label>
+                    <div class="col-md-10">
+                        <!-- В forms.py в UserLoginForm есть поле email. Здесь его получаем-->
+                        {{ form.email }}
+                    </div>
+                    <!--Показываются все ошибки, которые формируются в forms.py UserLoginForm в методах, начинающихся на "clean..." -->
+                    {{ form.email.errors }}
+
+            </div>
+            <div class="form-group">
+                <label class="control-label col-md-2">Пароль</label>
+                    <div class="col-md-10">
+                        {{ form.password1 }}
+                    </div>
+                    {{ form.password1.errors }}
+            </div>
+
+            <div class="form-group">
+                <button class="btn btn-primary btn-md" type="submit">
+                    <span class="fas fa-check"></span>
+                    Войти
+                </button>
+            </div>
+
+        </form>
+        <!-- Кнопка перехода на страницу регистрации -->
+        <div class="border-top pt-3">
+            <small class="text-muted">
+                 Нужен аккаунт? <a class="ml-2" href="/register">Зарегистрируйтесь!</a>
+            </small>
+        </div>
+    </div>
+
+{% endblock %}

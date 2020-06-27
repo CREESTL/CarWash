@@ -1,0 +1,80 @@
+<!--
+
+ СТРАНИЦА РЕГИСТРАЦИИ
+
+ -->
+
+
+
+{% extends 'base.html' %}
+<!-- Загружает файлы из папки static -->
+{% load static %}
+{% block content %}
+    <div class="container">
+        {% if messages%}
+            {% for message in messages %}
+                <p class="text-warning text-center"><small>{{ message }}</small></p>
+            {% endfor %}
+        {% endif %}
+    </div>
+    <div class="text-center text-info">
+        <h3>Страница регистрации</h3>
+        <br><br>
+    </div>
+    {{ form.non_field.errors }}
+    <div class="container">
+        <form class="form-horizontal" action="/register/" method="POST">
+            {% csrf_token %}
+            <div class="form-group">
+
+                <label class="control-label col-md-2">Имя пользователя</label>
+                <div class="col-md-10">
+                    <!-- В forms.py в UserRegisterForm есть поле username (<input>). Здесь его получаем-->
+                    {{ form.username }}
+                </div>
+                <!--Показываются все ошибки, которые формируются в forms.py UserRegisterForm в методах, начинающихся на "clean..." -->
+                {{ form.username.errors }}
+            </div>
+            <div class="form-group">
+
+                <label class="control-label col-md-2">Почта</label>
+                <div class="col-md-10">
+                    {{ form.email}}
+                </div>
+                {{ form.email.errors }}
+            </div>
+            <div class="form-group">
+
+                <label class="control-label col-md-2">Пароль</label>
+                <div class="col-md-10">
+                    {{ form.password1 }}
+                </div>
+                {{ form.password1.errors }}
+            </div>
+            <div class="form-group">
+
+                <label class="control-label col-md-2">Проверка пароля</label>
+                <div class="col-md-10">
+                    {{ form.password2}}
+                </div>
+                {{ form.password2.errors }}
+            </div>
+
+
+
+
+            <div class="form-group">
+                <button class="btn btn-primary btn-md" type="submit">
+                    <span class="fas fa-check"></span>
+                    Зарегистрироваться
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="border-top pt-3">
+        <small class="text-muted">
+            Уже есть аккаунт? <a class="ml-2" href="/login">Войти</a>
+        </small>
+    </div>
+{% endblock %}
