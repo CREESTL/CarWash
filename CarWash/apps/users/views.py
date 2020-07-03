@@ -122,15 +122,26 @@ def logout(request):
         return render(request, 'users/logout.html', {"logged_in": logged_in})
 
 
-# Функция рендерит страницу, где отображается видео с распознанными машинами
-def car_detection_page(request):
+# Функция рендерит страницу, где отображается видео с распознанными машинами снаружи мойки
+def car_detection_outside_page(request):
     if auth.current_user is not None:
         logged_in = True
     else:
         logged_in = False
     if request.method == 'POST':
         return HttpResponse('')
-    return render(request, 'users/car_detection.html', {"logged_in": logged_in})  # рендерится страница, на которую будет загружаться видео
+    return render(request, 'users/car_detection_outside.html', {"logged_in": logged_in})  # рендерится страница, на которую будет загружаться видео
+
+# Функция рендерит страницу, где отображается видео с распознанными машинами изнутри мойки
+def car_detection_inside_page(request):
+    if auth.current_user is not None:
+        logged_in = True
+    else:
+        logged_in = False
+    if request.method == 'POST':
+        return HttpResponse('')
+    return render(request, 'users/car_detection_inside.html', {"logged_in": logged_in})  # рендерится страница, на которую будет загружаться видео
+
 
 
 # Функция обращается к ранее созданному объекту детектора и возвращает информацию, которую тот обработал
