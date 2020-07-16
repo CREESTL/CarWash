@@ -113,7 +113,13 @@ class LP_Detector():
             # находим текст и форматируем по стандарту страны
             textArr = self.textDetector.predict(zones, regionNames, countLines)
             textArr = textPostprocessing(textArr, regionNames)
-            print("\n[INFO] TEXT FOUND: " + textArr[0] + "\n")
+            try:
+                print("\n[INFO] TEXT FOUND: " + textArr[0] + "\n")
+            except:
+                print("\n[INFO] TEXT FOUND: NOTHING \n")
 
             # Возвращаем полученный текст
-            return textArr[0]
+            try:
+                return textArr[0]
+            except:
+                return " "

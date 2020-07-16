@@ -34,11 +34,11 @@
                         <br>
 
                         <div class="text-center">
-                            <a href="/register">
+                            <a href="/login">
                                 <button class="btn btn-outline-info" type="submit">
                                     <!-- Добавляю логотипы Font Awesome -->
-                                    <span class="fas fa-feather-alt"></span>
-                                    Зарегистрироваться
+                                    <span class="fas fa-sign-in-alt"></span>
+                                    Войти
                                 </button>
                             </a>
                         </div>
@@ -49,10 +49,10 @@
                         <br>
                         <div class="text-center">
 
-                            <a href="/login">
+                            <a href="/register">
                                 <button class="btn btn-outline-info" type="submit">
-                                    <span class="fas fa-sign-in-alt"></span>
-                                    Войти
+                                    <span class="fas fa-feather-alt"></span>
+                                    Зарегистрироваться
                                 </button>
                             </a>
                         </div>
@@ -78,12 +78,23 @@
                                 <p class="text-success text-center"><small>{{ message }}</small></p>
                             {% endfor %}
                         {% endif %}
-                        <br><br><br>
+                        <br><br>
+                        <div class="text-center text-info">
+                            <h3>Прямая трансляция с автомойки</h3>
+                        </div>
+                        <br>
                         <div class="text-center">
                            <a href="/car_detection_outside/">
                                 <button class="btn btn-outline-info"  type="submit">
-                                    <span class="fa fa-car" style="color:orange; font-size:26px"></span>
-                                    Прямая трансляция с автомойки
+                                    <span class="fas fa-warehouse" style="color:gray; font-size:26px"></span>
+                                   	&nbsp;&nbsp;Наружняя камера
+                                </button>
+                           <br><br>
+                           </a>
+                            <a href="/car_detection_inside/">
+                                <button class="btn btn-outline-info"  type="submit">
+                                    <span class="fas fa-shower" style="color:orange; font-size:26px"></span>
+                                    &nbsp;&nbsp;Внутренняя камера
                                 </button>
                            </a>
                         </div>

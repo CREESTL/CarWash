@@ -9,10 +9,10 @@
 
         // После инициализации детектора, мы будем каждые N секунд получать его self. параметры
         setInterval(function(){
-        // Второй запрос - получает текстовые данные об авто
+        // Первый запрос - получает текстовые данные об авто
             $.ajax(
             {
-                url: "/get_text_from_detector/",
+                url: "/get_text_from_detector_outside/",
                 type: "GET",
             // data - это то, что возвращает функция из views.py
                 success : function(data) {
@@ -20,18 +20,8 @@
                 },
 
             });
-        // Третий запрос - распознает номер авто
-            $.ajax(
-            {
-                url: "/detect_LP/",
-                type: "GET",
-            // data - это то, что возвращает функция из views.py
-                success : function(data) {
-                    $("#LP_text").html(data);
-                },
 
-            });
-        // Четвертый запрос - получает общее число авто за все время
+        // Второй запрос - получает общее число авто за все время
             $.ajax(
             {
                 url: "/get_total/",
@@ -64,12 +54,6 @@
 
                         </p>
                     </div>
-                    <!-- Номер авто -->
-                    <div id="LP_text">
-                        <p>
-
-                        </p>
-                    </div>
                     <!-- Общее число авто -->
                     <div id="total">
                         <p>
@@ -80,7 +64,7 @@
             </div>
             <div class="col-md-8">
                 <div id="car_img"class="text-left">
-                    <img class='img img-thumbnail rounded' src="{% url 'users:get_image_from_detector' %}"/>
+                    <img class='img img-thumbnail rounded' src="{% url 'users:get_image_from_detector_outside' %}"/>
                 </div>
             </div>
         </div>
@@ -98,7 +82,7 @@
         </a>
         <a class="ml-2" href="/car_detection_inside">
             <button class="btn btn-outline-info" type="submit">
-                <span class="fa fa-home"></span>
+                <span class="fas fa-exchange-alt"></span>
                 Сменить камеру (внутренняя)
             </button>
         </a>

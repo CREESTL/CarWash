@@ -2,23 +2,78 @@
 {% load static %}
 <!-- Каждые 2 секунды выполняется ajax запрос на изменение текста на странице -->
 
+
+
+
 <body>
 {% block content %}
 
-<script type="text/javascript">
+    <script type="text/javascript">
+        // Каждые 5 секунд
+        setInterval(function(){
+            // Первый запрос получает текстовые данные об авто
+            $.ajax(
+            {
+                url: "get_text_from_detector_inside/",
+                type: "GET",
+            // data - это то, что возвращает функция из views.py
+                success : function(data) {
+                    $("#info").html(data);
+                },
 
-</script>
+            });
+        }, 5000);
+        // Каждые 3 секунды
+        setInterval(function(){
+            // Второй запрос распознает номер авто
+            $.ajax(
+                {
+                    url: "/detect_LP/",
+                    type: "GET",
+                // data - это то, что возвращает функция из views.py
+                    success : function(data) {
+                        $("#LP_text").html(data);
+                    },
+
+                });
+        }, 3000)
+    </script>
 
 <!-- Для авторизованных пользователей -->
 {% if logged_in == True %}
+
 
     <div class="container">
 
         <div class="text-center text-info">
             <h2>Внутренняя камера</h2>
-            <h6>Тут должен быть видос</h6>
         </div>
-        <hr>
+        <br>
+        <div class="row">
+            <div class="col-md-8">
+            <!-- Номер авто -->
+                <div id="LP_text">
+                    <p>
+
+                    </p>
+                </div>
+                <div id="info">
+                    <p>
+
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div id="car_img"class="text-left">
+                    <img class='img img-thumbnail rounded' src="{% url 'users:get_image_from_detector_inside' %}"/>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <hr>
     <div class="btn btn-group-horizontal">
         <a class="ml-2" href="/index">
             <button class="btn btn-outline-info" type="submit">
@@ -28,8 +83,8 @@
         </a>
         <a class="ml-2" href="/car_detection_outside">
             <button class="btn btn-outline-info" type="submit">
-                <span class="fa fa-home"></span>
-                Сменить камеру (наружняя)
+                <span class="fas fa-exchange-alt"></span>
+                Сменить камеру (внешняя)
             </button>
         </a>
     </div>
