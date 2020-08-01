@@ -1,12 +1,4 @@
-<!--
-
- НА ЭТОЙ СТРАНИЦЕ ДОЛЖНО ПОКАЗЫВАТЬСЯ ВИДЕО С МОЙКИ, НО ПОКА ЧТО ОНА НЕ ИСПОЛЬЗУЕТСЯ
-
- -->
-
-
 {% extends "base.html" %}
-<!-- Загружает файлы из папки static -->
 {% load static %}
 <html>
 <head>
@@ -20,8 +12,9 @@
     <div class="container">
         <div class="text-center text-primary">
             <h2>Видео, полученное с YouTube</h2>
-            <!-- Здест в кавычках - НАЗВАНИЕ url паттерна из urls.py -->
-            <!-- users: нужно, так как у нас в urls.py есть app_name="users"-->
+            <!-- Here in {% url %} you can see the URL that activates function from "views.py"
+                 This function "streams" processed frames into this "<img>" field
+            -->
             <img class='img img-thumbnail rounded' src="{% url 'users:youtube_video_stream' %}" height="400" width="600"/>
         </div>
     </div>

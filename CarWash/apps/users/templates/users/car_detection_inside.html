@@ -1,45 +1,39 @@
 {% extends "base.html" %}
 {% load static %}
-<!-- Каждые 2 секунды выполняется ajax запрос на изменение текста на странице -->
 
-
-
-
+<!-- Once in 3-5 seconds AJAX request is sent to activate functions is "views.py"-->
 <body>
 {% block content %}
 
     <script type="text/javascript">
-        // Каждые 5 секунд
         setInterval(function(){
-            // Первый запрос получает текстовые данные об авто
+            // The first request gets text info about the car
             $.ajax(
             {
                 url: "get_text_from_detector_inside/",
                 type: "GET",
-            // data - это то, что возвращает функция из views.py
                 success : function(data) {
                     $("#info").html(data);
                 },
 
             });
         }, 5000);
-        // Каждые 3 секунды
         setInterval(function(){
-            // Второй запрос распознает номер авто
+            // The second request detects license plate
             $.ajax(
                 {
                     url: "/detect_LP/",
                     type: "GET",
-                // data - это то, что возвращает функция из views.py
                     success : function(data) {
-                        $("#LP_text").html(data);
+                        if (data != ""){
+                            $("#LP_text").html(data);
+                        }
                     },
-
                 });
         }, 3000)
     </script>
 
-<!-- Для авторизованных пользователей -->
+<!-- For authorized users -->
 {% if logged_in == True %}
 
 
@@ -50,17 +44,19 @@
         </div>
         <br>
         <div class="row">
-            <div class="col-md-8">
+            <div class="col-md-4">
             <!-- Номер авто -->
-                <div id="LP_text">
-                    <p>
+                <div class="text-left">
+                    <div id="LP_text">
+                        <p>
 
-                    </p>
-                </div>
-                <div id="info">
-                    <p>
+                        </p>
+                    </div>
+                    <div id="info">
+                        <p>
 
-                    </p>
+                        </p>
+                    </div>
                 </div>
             </div>
             <div class="col-md-8">
@@ -89,7 +85,7 @@
         </a>
     </div>
 
-<!-- Для неавторизованных пользователей -->
+<!-- For unauthorized users -->
 {% else %}
     <h2>
         <span class="fa fa-exclamation" style="color:red;"></span>

@@ -1,25 +1,24 @@
-# Импорт все библиотек
 import os
 import cv2
-import numpy as np
 import sys
-import json
-import matplotlib.image as mpimg
-from django.conf import settings
-# Импортируем все классы
-from .NomeroffNet import filters, RectDetector, TextDetector, OptionsDetector, Detector, textPostprocessing #textPostprocessingAsync
 import tensorflow as tf
+from django.conf import settings
+
+
+# import all necessary classes
+from .NomeroffNet import filters, RectDetector, TextDetector, OptionsDetector, Detector, textPostprocessing #textPostprocessingAsync
 
 graph = tf.get_default_graph()
 
-# LP = license plata
+'''
+This class detects car number on it's license plate
+'''
 class LP_Detector():
     def __init__(self):
         print("\n[INFO] LOADING LICENSE PLATE DETECTOR...\n")
-        # путь к корню
         self.NOMEROFF_NET_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../')
 
-        # путь к MaskRCNN (если она не в корне)
+        # path to MaskRCNN
         self.MASK_RCNN_DIR = os.path.join(self.NOMEROFF_NET_DIR, 'Mask_RCNN')
         self.MASK_RCNN_LOG_DIR = os.path.join(self.NOMEROFF_NET_DIR, 'logs')
 
@@ -33,7 +32,7 @@ class LP_Detector():
         self.optionsDetector = OptionsDetector()
         self.optionsDetector.load("latest")
 
-        # Активируем детектор текста
+        # Initializing text detector
         self.textDetector = TextDetector({
             "eu_ua_2004_2015": {
                 "for_regions": ["eu_ua_2015", "eu_ua_2004"],
@@ -57,28 +56,28 @@ class LP_Detector():
             }
         })
 
-        # Путь к фотке для распознавания
+        # path to the image to process
+        # image was places there by another module of my program
         self.img_path = os.path.join(settings.STATICFILES_DIR + "/temp/detect_LP.jpg")
 
         self.max_img_w = 1600
 
 
-    # Функция распознавания номера автомобиля
+    # main funtion
     def detect_license_plate(self):
         global graph
         print("\n[INFO] DETECTING LICENSE PLATE...\n")
-        # фотка читается в GRAYSСALE обязательно
+        # it is important to convert image to GRAYSCALE
         img = cv2.imread(self.img_path, cv2.IMREAD_GRAYSCALE)
 
-        # если пока что не было загружено в папку temp никакой фотки, то возвращаем "пустой" текст
+        # if there is no image to process - return empty line
         if img is None:
             return " "
 
         copy = cv2.imread(self.img_path)
-        # явно в BGR переводим
         img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
 
-        # изменяем размер фото для увеличения скорости
+        # resize image to increase speed
         img_w = img.shape[1]
         img_h = img.shape[0]
         img_w_r = 1
@@ -92,25 +91,25 @@ class LP_Detector():
         with graph.as_default():
             NP = self.nnet.detect([resized_img])
 
-            # Генерируем маску
+            # generate a mask
             cv_img_masks = filters.cv_img_mask(NP)
 
-            # Находим координаты бокса номера
+            # find number's box coordinates
             arrPoints = self.rectDetector.detect(cv_img_masks, outboundHeightOffset=0, fixGeometry=True, fixRectangleAngle=10)
             arrPoints[..., 1:2] = arrPoints[..., 1:2]*img_h_r
             arrPoints[..., 0:1] = arrPoints[..., 0:1]*img_w_r
 
-            # Рисуем все боксы
+            # draw all boxes
             filters.draw_box(copy, arrPoints, (0, 255, 0), 3)
 
-            # вырезаем эти зоны для дальнейшего анализа
+            # cropp boxes for further analysis
             zones = self.rectDetector.get_cv_zonesBGR(img, arrPoints)
 
-            # находим стандарт номера, соответствующий стране (номер будет отформатирован под него)
+            # find a "number standard" according to the country
             regionIds, stateIds, countLines = self.optionsDetector.predict(zones)
             regionNames = self.optionsDetector.getRegionLabels(regionIds)
 
-            # находим текст и форматируем по стандарту страны
+            # detect text and format it according to "number standard"
             textArr = self.textDetector.predict(zones, regionNames, countLines)
             textArr = textPostprocessing(textArr, regionNames)
             try:
@@ -118,7 +117,7 @@ class LP_Detector():
             except:
                 print("\n[INFO] TEXT FOUND: NOTHING \n")
 
-            # Возвращаем полученный текст
+            # return the result (text)
             try:
                 return textArr[0]
             except:

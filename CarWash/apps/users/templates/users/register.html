@@ -1,13 +1,4 @@
-<!--
-
- СТРАНИЦА РЕГИСТРАЦИИ
-
- -->
-
-
-
 {% extends 'base.html' %}
-<!-- Загружает файлы из папки static -->
 {% load static %}
 {% block content %}
     <div class="container">
@@ -29,10 +20,8 @@
 
                 <label class="control-label col-md-2">Имя пользователя</label>
                 <div class="col-md-10">
-                    <!-- В forms.py в UserRegisterForm есть поле username (<input>). Здесь его получаем-->
                     {{ form.username }}
                 </div>
-                <!--Показываются все ошибки, которые формируются в forms.py UserRegisterForm в методах, начинающихся на "clean..." -->
                 {{ form.username.errors }}
             </div>
             <div class="form-group">

@@ -1,6 +1,3 @@
-from django.conf import settings
-import imutils
-from CarWash.apps.users.car_type_recognition.car_type_recognition import CarTypeRecongizer
 from CarWash.apps.users.car_detection_outside.pyimagesearch.centroidtracker import CentroidTracker
 from CarWash.apps.users.car_detection_outside.pyimagesearch.trackableobject import TrackableObject
 import numpy as np
@@ -11,109 +8,133 @@ from django.conf import settings
 import math as maths
 import time
 from threading import Thread
-import threading
-import pyrebase
 
 
+'''
+This class detects license plate number on stopped cars
+'''
 class CarStopDetector():
     def __init__(self):
 
-        print("\n[INFO] LOADING CAR STOP DETECTOR...\n")
+        print("\n[INFO] LOADING CAR DETECTOR INSIDE...\n")
 
-        # Конфигурация для нейронной сети
+        # YOLOv3 configuration
         # ______________________________________________________________________________
-        self.video = cv2.VideoCapture(settings.STATICFILES_DIR + "/input/taxi_stop.mp4")
+        self.video = cv2.VideoCapture(settings.STATICFILES_DIR + "/input/mazda_not_in.mp4")
         self.weights_path = settings.STATICFILES_DIR + "/yolo/yolov3_608.weights"
         self.cfg_path = settings.STATICFILES_DIR + "/yolo/yolov3_608.cfg"
         self.names_path = settings.STATICFILES_DIR + "/yolo/yolov3_608.names"
+        # cascades for LP(license plate) box drawing
+        self.faceCascade = cv2.CascadeClassifier(settings.STATICFILES_DIR + "/cascades/plates_cascade.xml")
         with open(self.names_path) as f:
             self.CLASSES = [line.strip() for line in f.readlines()]
-        # Создание самой нейронной сети
+        # creating a NN
         self.net = cv2.dnn.readNet(self.weights_path, self.cfg_path)
         self.layer_names = self.net.getLayerNames()
         self.output_layers = [self.layer_names[i[0] - 1] for i in self.net.getUnconnectedOutLayers()]
-        # Размеры входного изображения
+        # NN input image size
         self.inpWidth = 608
         self.inpHeight = 608
-        # инициализируем размеры кадра как пустые значения
-        # они будут переназначены при анализе первого кадра и только
-        # это ускорит работу программы
+
+        # processed video frame size
         self.width = None
         self.height = None
 
+        # NN minimum confidence
         self.min_confidence = 0.80
 
-        # Конфигурация для трекера центроидов
+        # Centroid tracker configuration
         self.car_ct = CentroidTracker()
         self.car_ct.maxDisappeared = 10
         self.truck_ct = CentroidTracker()
         self.truck_ct.maxDisappeared = 10
 
-        # сам список трекеров
+        # list of trackers
         self.trackers = []
         self.class_ids = []
 
-        # список объектов для трекинга
+        # objects for tracking
         self.trackableObjects = {}
 
-        # счетчик машин и временная переменная
+        # car counter and temporary variable
         self.total = 0
         self.old_total = 0
         self.temp = None
 
-        #
-
-        # полное число кадров в видео
+        # number of frames in the video
         self.totalFrames = 0
 
-        # номер кадра видео
+        # number of current frame
         self.frame_number = 0
 
-        # пропуска кадром
+        # frame 1 - detect cars
+        # frame 2 - track cars
+        # frame 3 - track cars
+        # frame 4 - track cars
+        # frame 5 - track cars
+        # frame 6 - track cars
+        # frame 7 - detect cars
+        # etc...
         self.skip_frames = 5
 
-        # Пременная - результат работы self.detect_cars()
+        # result of work of self.detect_cars()
         self.generator = None
 
-        # Переменная прекарщает работу детектора
+        # stops detector's work
         self.stopped = False
 
-        # Переменная - обрабатываемый кадр
+        # current processed frame
         self.frame = None
 
+        # old vehicle trackers
+        # "old" means the trackers of the previous frame
         self.old_car_trackers = None
         self.old_truck_trackers = None
 
+        # IDs of vehicles that are MAYBE stopped
         self.stopped_car_IDs = []
         self.stopped_truck_IDs = []
 
+        # dictionaries: ID -> amount of frames a vehicle was not moving for
         self.car_counting_frames = {}
         self.truck_counting_frames = {}
 
+        # dictionaries: ID -> amount of seconds a vehicle was not moving for
         self.car_counting_seconds = {}
         self.truck_counting_seconds = {}
 
+        # this variable is used for car stop detection
         self.parts = 60
 
-        # если видео пишется в 60fps, то получается, что машина должна простоять 2 секунды
+        # this is how many frames a car should stand at one place so we can say that it has stopped
+        # if the video is recorded in 60fps 120 frames is equal to 2 seconds of real time
         self.frames_to_stop = 120
 
+        # vehicles that are stopped
         self.long_stopped_cars = []
         self.long_stopped_trucks = []
 
+        # dictionary: ID -> [stopped at, started moving at]
         self.result = {}
 
-        # словарь ID - координаты бокса
+        # dictionary: ID -> box coordinates
         self.ID_boxes = {}
 
-        # список всех боксов, которые мы рисовали за кадр.
-        # центроиды боксов из этого списка сравниваются с координатами центроидов из cars&trucks, чтобы понять
-        # какому ID соответствует данный бокс
+        # list of all LP boxes on the frame
+        self.plaques = []
+
+        # list of all car boxes on the frame
+        # centroids from this list are compared to centroids from "cars" or "trucks" dictionaries to connect
+        # each ID to some box
         self.all_boxes = None
 
-        # переменная отвечает за то, во сколько раз увеличивается бокс распознанного авто
+        # when a car is stopped I increase it's box size a bit. This is how many times box size increases
         self.times = 1.1
 
+        # list of all IDs on the frame
+        self.current_IDs = []
+
+    # function starts a separate thread for car detection
     def start(self):
         print("[INFO] STARTING DETECTION_INSIDE_THREAD...")
         detection_inside_thread = Thread(target=self.get_generator, args=())
@@ -121,15 +142,17 @@ class CarStopDetector():
         detection_inside_thread.start()
         return self  # нужно возвращать self, чтобы можно было start() приравнять к какой-нибудь переменной
 
+    # function starts detection and puts it's results to a single variable
     def get_generator(self):
         self.generator = self.detect_car_stop()
 
+    # function stops detection
     def stop(self):
         self.stopped = True
 
-    # Function draws car centroid
-    # Centroid is green if the car is moving
-    # Centroid is red if the car is not moving
+    # function draws car centroid
+    # centroid is green if the car is moving
+    # centroid is red if the car is not moving
     def draw_centroids(self, objects):
         for (objectID, centroid) in objects.items():
             # check if a trackable objects exists for particular ID
@@ -144,7 +167,7 @@ class CarStopDetector():
 
             # drawing circle and text
             if objectID in self.long_stopped_cars:
-                text = "ID {} STOPPED".format(objectID + 1)
+                text = "ID {} STOPPED".format(objectID)
                 # if a car is not moving then we draw a large yellow centroid
                 cv2.putText(self.frame, text, (centroid[0] - 10, centroid[1] - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
@@ -156,24 +179,23 @@ class CarStopDetector():
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                 cv2.circle(self.frame, (centroid[0], centroid[1]), 3, (0, 255, 0), -1)
 
-    # Функция сравнивает координаты центроидов всех боксов, обнаруженных на кадре с координатами центроидов
-    # из cars&trucks. Если координаты совпадают, то присваиваем ID из cars&trucks боксу с данными координатами
-    # Затем проверяем, есть ли ID в остановившихся авто. Если да, то рисуем увеличенный бокс. Если нет-обычный
+    # function compares centroids of all boxes found on the frame with centroids from "cars" and "trackers" variables
+    # if centroids' coordinates match then it connects ID to the certain centroid
+    # then it checks if the ID is is the list of stopped vehicles and draw a large box. Or, it's not -  draw a normal box
     def draw_boxes(self, objects):
         for box in self.all_boxes:
             centroid_1 = [int((box[2] + box[0]) / 2), int((box[3] + box[1]) / 2)]
-            #cv2.circle(self.frame, (centroid_1[0], centroid_1[1]), 15, (0, 0, 255), 5)
             for (objectID, centroid_2) in objects.items():
                 centroid_2 = centroid_2.tolist()
-                #cv2.circle(self.frame, (centroid_2[0], centroid_2[1]), 10, (255, 0, 0), 5)
                 if self.find_distance(centroid_1, centroid_2) <= 30:
-                    self.ID_boxes[objectID] = box  # добавляем в словарь ID и бокс
+                    self.ID_boxes[objectID] = box  # add ID and box to the dictionary
         for ID, box in self.ID_boxes.items():
             if ID in self.long_stopped_cars:
                 # draw a large red box
-                cv2.rectangle(self.frame, (int(box[0] / self.times), int(box[1] / self.times)), (int(box[2] * self.times), int(box[3] * self.times)), (0, 0, 255), 2)
+                cv2.rectangle(self.frame, (int(box[0] / self.times), int(box[1] / self.times)),
+                              (int(box[2] * self.times), int(box[3] * self.times)), (0, 0, 255), 2)
 
-    # Function calculates distance between two centroids
+    # function calculates distance between two centroids
     def find_distance(self, c1, c2):
         try:
             distance = int(maths.sqrt((c2[0] - c1[0]) ** 2 + (c2[1] - c1[1]) ** 2))
@@ -184,7 +206,15 @@ class CarStopDetector():
             distance = int(maths.sqrt((c2[0] - c1[0]) ** 2 + (c2[1] - c1[1]) ** 2))
             return distance
 
-    # Function translates time.asctime() into Russia
+    # function returns a list of IDs that are currently on the frame
+    def fill_currrent_IDs(self, objects):
+        keys = [key for key in objects.keys()]
+        if keys == []:
+            return
+        else:
+            self.current_IDs = [objectID for objectID in objects.keys()]
+
+    # function translates time.asctime() into Russian
     def format_time(self, now):
         now = now.replace("Sun", "Воскресенье")
         now = now.replace("Mon", "Понедельник")
@@ -207,8 +237,9 @@ class CarStopDetector():
         now = now.replace("Jun", "Июль")
         now = now.replace(" ", ", ")
         return now
-    # Function compares coords on the certain car's box on N and N+1 frames
-    # It returns a list of cars that are, PERHAPS, not moving
+
+    # function compares coordinates on the certain car's box on N and N+1 frames
+    # it returns a list of cars that are, PERHAPS, not moving
     def compare_trackers(self, old_trackers, new_trackers, vehicle_type=None):
         for (old_objectID, old_centroid) in old_trackers.items():
             for (new_objectID, new_centroid) in new_trackers.items():
@@ -266,7 +297,7 @@ class CarStopDetector():
                     print("there is no any truck on a frame - clear stopped_truck_IDs")
                     self.stopped_truck_IDs.clear()
 
-    # Function finds cars/trucks that were not moving long enough
+    # function finds cars/trucks that were not moving long enough
     def find_stopped_cars(self, counting_frames):
         long_stopped_vehicles = []
         for ID, frames in counting_frames.items():
@@ -274,10 +305,34 @@ class CarStopDetector():
                 long_stopped_vehicles.append(ID)
         return long_stopped_vehicles
 
+    # function deletes LP plaques boxes with similar coordinates not to draw them one upon another
+    def only_different(self):
+        plaques = list(self.plaques)
+        for i, plq in enumerate(plaques):
+            plq = list(plq)
+            plaques[i] = plq
+        for plq in plaques:
+            i = plaques.index(plq)
+            for j in range(0, len(plaques) - 1):
+                if plaques[i] == plaques[j]:
+                    plaques.remove(plaques[j])
+        return plaques
+
+    # function draws boxes on license plates (it DOES NOT detect text on them)
+    def draw_LP_boxes(self):
+        gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
+        # 1.3 = scale, 5 = min_neighbours
+        self.plaques = self.faceCascade.detectMultiScale(gray, 1.3, 5)
+        # delete similar LP plaques
+        self.plaques = self.only_different()
+        for plaque in self.plaques:
+            (x, y, w, h) = plaque
+            cv2.rectangle(self.frame, (x, y), (x + w, y + h), (0, 255, 0), 1)
+
     # main function
     def detect_car_stop(self):
         while not self.stopped:
-            # каждый раз этот массив надо заполнять с нуля
+            # this list should be filled from scratch every time
             self.all_boxes = []
             self.frame_number += 1
             success_capture, self.frame = self.video.read()
@@ -296,7 +351,6 @@ class CarStopDetector():
             print("\n=============================================")
             print(f"FRAME {self.frame_number}")
             print(f"total is {self.total} and old_total is {self.old_total}")
-
 
             # change frame size to increase speed a bit
             self.frame = imutils.resize(self.frame, width=600)
@@ -346,7 +400,7 @@ class CarStopDetector():
                             h = int(detection[3] * self.height)
 
                             # if a box is too small (for example if a car is moving very close to the edge of a frame, then we do skip it
-                            if h <= (self.height / 7):
+                            if h <= (self.height / 4):
                                 continue
 
                             # coords of left upper and right lower connors of the box
@@ -359,7 +413,7 @@ class CarStopDetector():
                             self.truck_ct.maxDistance = w
                             self.car_ct.maxDistance = w
 
-                            # добавляем бокс в общий список боксов
+                            # add a box to a list of all boxes
                             self.all_boxes.append([x1, y1, x2, y2])
 
                             # create a tracker for every car
@@ -387,7 +441,7 @@ class CarStopDetector():
                     x2 = int(pos.right())
                     y2 = int(pos.bottom())
 
-                    # добавляем бокс в общий список боксов
+                    # add a box to a list of all boxes
                     self.all_boxes.append([x1, y1, x2, y2])
 
                     obj_class = self.CLASSES[class_id]
@@ -401,7 +455,11 @@ class CarStopDetector():
             cars = self.car_ct.update(car_rects)
             trucks = self.truck_ct.update(truck_rects)
 
-            # алгоритм подсчета машин
+            # create lists of all IDs on the frame
+            self.fill_currrent_IDs(cars)
+            self.fill_currrent_IDs(trucks)
+
+            # car counting algorithm
             length = len(cars.keys()) + len(trucks.keys())
             if length > self.total:
                 self.total += length - self.total
@@ -410,11 +468,13 @@ class CarStopDetector():
                     self.total += length - self.temp
             if length < self.total:
                 self.temp = length
+            # if a total number of cars has increased - write a frame to the file to detect LP using it later
             # Если количество машин увеличилось, то распознаем тип появившейся машины
             if self.total > self.old_total:
-                # если в кадре появился новый автомобиль, то сохраняю кадр с ним в папку temp, чтобы распознать его номер
                 cv2.imwrite(settings.STATICFILES_DIR + "/temp/detect_LP.jpg", self.frame)
 
+            # drawing LP boxes (works only if a car is not far away from the camera)
+            self.draw_LP_boxes()
 
             # get the IDs of cars that are, perhaps, stopped
             if self.old_car_trackers is not None:
@@ -514,11 +574,10 @@ class CarStopDetector():
             # increase frame number
             self.totalFrames += 1
 
-            # перебираем все остановившиеся на долго авто и добавляем их в результат
-            # словарь: ID авто -> [время начала остановки, время окончания остановки]
+            # add each stopped vehicle to the result dictionary
             for ID, [start, stop] in self.car_counting_seconds.items():
                 self.result[ID] = [start, stop]
 
-            # кадр переводится в формат jpeg и выводится в генератор
+            # the processed frame is converted to .jpg and yielded to the "generator" variable
             jpeg = cv2.imencode('.jpg', self.frame)[1].tostring()
             yield (b'--frame_1\r\n'b'Content-Type: image/jpeg\r\n\r\n' + jpeg + b'\r\n\r\n')

@@ -1,60 +1,53 @@
 {% extends "base.html" %}
 {% load static %}
-<!-- Каждые 2 секунды выполняется ajax запрос на изменение текста на странице -->
 
 <body>
 {% block content %}
 
 <script type="text/javascript">
 
-        // После инициализации детектора, мы будем каждые N секунд получать его self. параметры
         setInterval(function(){
-        // Первый запрос - получает текстовые данные об авто
+        // The first request gets text info about the car
             $.ajax(
             {
                 url: "/get_text_from_detector_outside/",
                 type: "GET",
-            // data - это то, что возвращает функция из views.py
                 success : function(data) {
                     $("#info").html(data);
                 },
 
             });
-
-        // Второй запрос - получает общее число авто за все время
+        // The second request gets total number of cars on the video
             $.ajax(
             {
                 url: "/get_total/",
                 type: "GET",
-            // data - это то, что возвращает функция из views.py
                 success : function(data) {
                     $("#total").html(data);
                 },
-
             });
-
        },5000);
 </script>
 
-<!-- Для авторизованных пользователей -->
+<!-- For authorized users -->
 {% if logged_in == True %}
 
     <div class="container">
 
         <div class="text-center text-info">
-            <h2>Наружняя камера</h2>
+            <h2>Внешняя камера</h2>
         </div>
         <br>
         <div class="row">
             <div class="col-md-4">
                 <div class="text-left">
-                    <!-- Общая информация об авто -->
+                    <!-- General info about the car -->
                     <div id="info">
                         <p>
 
                         </p>
                     </div>
-                    <!-- Общее число авто -->
+                    <!-- Total number of cars -->
                     <div id="total">
                         <p>
 
@@ -88,7 +81,7 @@
         </a>
     </div>
 
-<!-- Для неавторизованных пользователей -->
+<!-- For unauthorized users -->
 {% else %}
     <h2>
         <span class="fa fa-exclamation" style="color:red;"></span>

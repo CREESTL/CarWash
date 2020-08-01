@@ -1,11 +1,10 @@
 import Algorithmia
 import pyrebase
 import os
-import cv2
 from django.conf import settings
 
 #######################################################################################
-# конфиг для FireBase
+# FireBase configuration
 config = {
     'apiKey': "AIzaSyBnsFHlZ9IP7kATKMILibYxT4y2_CRWUrM",
     'authDomain': "carwash-838f3.firebaseapp.com",
@@ -19,43 +18,60 @@ config = {
 
 firebase = pyrebase.initialize_app(config)
 
-auth = firebase.auth()  # регистраци и вход пользователей
+# user registration and authentication
+auth = firebase.auth()
 
-db = firebase.database()  # текстовые данные
+# all text data
+db = firebase.database()
 
-storage = firebase.storage()  # медиа-файлы
+# media files (images and videos)
+storage = firebase.storage()
 
 ##################################################################################
 
 
+'''
+This class detects type, make, model of a car on the image
+'''
 class CarTypeRecongizer():
-    def __init__(self, frame):
-        self.frame = frame
-        self.downloadToken = None
-        self.video_url = None
+    def __init__(self):
+        # dictionary: ID -> image url
+        self.urls = {}
+        # dictionary: ID -> {type, make, model} (the value is also a dictionary)
+        self.results = {}
 
-
+    # function puts all images from "temp/" folder into FireBase and return a list of their URLs
     def get_url(self):
-        # сначала фотку сохраняем в папку temp в static
-        cv2.imwrite(settings.STATICFILES_DIR + r"\temp\temporary_frame.jpg", self.frame)
-        # затем эту фотку помещаем на firebase
-        temporary_put_response = storage.child('users').child(auth.current_user["localId"]).child("images").child("temp").child("temporary_frame.jpg").put(settings.STATICFILES_DIR + r"\temp\temporary_frame.jpg")
-        # удаляем фотку с компа, так как она больше не нужна
-        #os.remove(settings.STATICFILES_DIR + r"\temp\temporary_frame.jpg")
-        # получаем токен, который нужен для получения url
-        self.downloadToken = temporary_put_response['downloadTokens']
-        # получаем сам URL видео
-        self.video_url = storage.child('users ').child(auth.current_user["localId"]).child("images").child("temp").child("temporary_frame.jpg").get_url(self.downloadToken)
-        if "/o/users%20" in self.video_url:
-            self.video_url = self.video_url.replace("/o/users%20", "/o/users")
-        return self.video_url
-    # Функция принимает на вход url картинки с авто и возращает информацию о типе и марке авто
-    def recognize(self, video_url):
-        # здесь токен моего аккаунта на Algorithmia
+        if not os.listdir(settings.STATICFILES_DIR + "/temp"):
+            print(" THERE ARE NO CROPPED CARS TO PROCESS IN DIRECTORY")
+        for file in os.listdir(settings.STATICFILES_DIR + "/temp"):
+            print(f"    file {file}")
+            if 'temporary_frame' in file:
+                # the last 1 or 2 symbols of a filename is an ID of a car on the frame
+                try:
+                    ID = int(file[-6:-4])
+                except:
+                    ID = int(file[-5:-4])
+                print(f"    ID on it is {ID}")
+                # put an image to FireBase
+                temporary_put_response = storage.child('users').child(auth.current_user["localId"]).child("images").child("temp").child(f"temporary_frame{ID}.jpg").put(settings.STATICFILES_DIR + "/temp/" + file)
+                # get a token that allows us to get the URL
+                downloadToken = temporary_put_response['downloadTokens']
+                # get the URL
+                video_url = storage.child('users ').child(auth.current_user["localId"]).child("images").child("temp").child(f"temporary_frame{ID}.jpg").get_url(downloadToken)
+                if "/o/users%20" in video_url:
+                    video_url = video_url.replace("/o/users%20", "/o/users")
+                self.urls[ID] = video_url
+
+    # function detects car type, make, model on the image
+    # takes image URL as an input
+    def recognize(self):
         client = Algorithmia.client('simZM3WZ+0NRs8RwL73M0X5GROX1')
         algo = client.algo('LgoBE/CarMakeandModelRecognition/0.4.7')
         algo.set_options(timeout=300)  # optional
-        # Обработка
-        result = algo.pipe(video_url).result[0]
-        # Вывод результата в удобной форме
-        return result
+        # each new car is processed
+        for ID, url in self.urls.items():
+            print(f"    in type_recognizer processing car with ID{ID}")
+            result = algo.pipe(url).result[0]
+            print(f"    result is {result}")
+            self.results[ID] = result
